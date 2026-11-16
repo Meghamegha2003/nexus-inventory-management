@@ -1,9 +1,12 @@
-import express from 'express'
-import cors from 'cors'
 
-const app = express()
+import express from 'express';
+import cors from 'cors';
+import managerRoutes from './presentation/routes/managerRoutes.js';
 
-app.use(cors())
-app.use(express.json())
+const app = express();
 
-export default app
+app.use(cors());
+app.use(express.json());
+app.use('/', managerRoutes);
+
+export default app;

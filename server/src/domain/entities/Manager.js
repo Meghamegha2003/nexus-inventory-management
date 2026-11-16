@@ -4,7 +4,7 @@ class Manager {
         name,
         email,
         password,
-        role = 'Manager',
+        role = 'manager',
         isActive = true,
     }){
         this.id = id;
