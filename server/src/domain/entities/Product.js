@@ -31,8 +31,13 @@ class Product {
             throw new Error("Product name is required");
         }
 
-        if (price < 0 || sellingPrice < 0) {
-            throw new Error("Product price cannot be negative");
+        if (
+            !Number.isFinite(price) ||
+            !Number.isFinite(sellingPrice) ||
+            price < 0 ||
+            sellingPrice < 0
+        ) {
+            throw new Error("Product prices must be valid non-negative numbers");
         }
 
         this.id = id;
