@@ -1,14 +1,14 @@
-
 import { ArrowUpDown } from 'lucide-react';
 
 const ProductTableHeader = () => {
     const headings = [
-        'Product ID',
+        'Product Id',
+        'Product Code',
+        'SKU/Barcode',
         'Product Name',
-        'Description',
-        'Price',
-        'Quantity',
-        'Category'
+        'Active',
+        'Category',
+        'Brand'
     ];
 
     return (

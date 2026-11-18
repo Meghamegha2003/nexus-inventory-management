@@ -242,7 +242,6 @@ const Products = () => {
         }
     };
 
-    // ADD PRODUCT
     const handleAddProduct = async (product) => {
         try {
             setSaving(true);
@@ -274,6 +273,16 @@ const Products = () => {
             setSaving(false);
         }
     };
+
+    const handleActiveChange = async (id, active) => {
+    setProducts((prevProducts) =>
+        prevProducts.map((product) =>
+            String(product.id || product._id) === String(id)
+                ? { ...product, active }
+                : product
+        )
+    );
+};
 
     return (
         <div className="h-screen w-full bg-[#F5F5F6] flex overflow-hidden">
@@ -317,6 +326,7 @@ const Products = () => {
                         error={error}
                         selectedFilter={selectedFilter}
                         onRetry={fetchProducts}
+                        onActiveChange={handleActiveChange}
                     />
 
                 </div>

@@ -8,7 +8,7 @@ import {
   Check,
   Trash2,
 } from 'lucide-react';
-import { createProduct } from '../../api/productApi';
+import { createProduct } from '../../services/productApi';
 
 const CustomCheckbox = ({ checked, onChange, label }) => (
   <label className="inline-flex items-center gap-2 cursor-pointer select-none">
@@ -131,6 +131,8 @@ export default function AddProductsModal({ onClose }) {
   const [quickAddModal, setQuickAddModal] = useState(null);
   const [quickAddValue, setQuickAddValue] = useState('');
   const [isSaving, setIsSaving] = useState(false);
+  const [lastUpdatedDate, setLastUpdatedDate] = useState('-');
+  const [lastUpdatedUser, setLastUpdatedUser] = useState('-');
 
   const fileInputRef = useRef(null);
   const toastTimerRef = useRef(null);
@@ -423,6 +425,35 @@ export default function AddProductsModal({ onClose }) {
     showToast('Product duplicated. Save it as a new product.', 'success');
   };
 
+  const validatePositiveNumbers = () => {
+    const fields = [
+      { name: 'Price', value: form.price },
+      { name: 'Selling Price', value: form.sellingPrice },
+      { name: 'Tax Percentage', value: form.taxPercent },
+      { name: 'Point Value', value: form.pointValue },
+      { name: 'Cost Per Point', value: form.costPerPoint },
+      { name: 'Minimum Stock', value: form.minimumStock },
+      { name: 'Display Order', value: form.displayOrder },
+    ];
+
+    for (const field of fields) {
+      if (field.value === '') continue;
+
+      const value = Number(field.value);
+
+      if (!Number.isFinite(value) || value < 0) {
+        showToast(`${field.name} cannot be negative`, 'error');
+        return false;
+      }
+    }
+
+    if (Number(form.taxPercent) > 100) {
+      showToast('Tax Percentage cannot exceed 100%', 'error');
+      return false;
+    }
+
+    return true;
+  };
 
   const handleSave = async () => {
     if (
@@ -435,6 +466,10 @@ export default function AddProductsModal({ onClose }) {
       form.sellingPrice === ''
     ) {
       showToast('Please fill in all required fields', 'error');
+      return;
+    }
+
+    if (!validatePositiveNumbers()) {
       return;
     }
 
@@ -480,26 +515,74 @@ export default function AddProductsModal({ onClose }) {
     try {
       const response = await createProduct(productData);
 
-      showToast(
-        response.message || 'Product saved successfully',
-        'success'
+      const responseData = response?.data ?? response;
+
+      const createdProduct =
+        responseData?.product ??
+        responseData?.data ??
+        responseData;
+
+      const generatedId =
+        createdProduct?._id ??
+        createdProduct?.id ??
+        responseData?.productId;
+
+      const updatedDate =
+        createdProduct?.updatedAt ||
+        createdProduct?.createdAt ||
+        responseData?.updatedAt ||
+        responseData?.createdAt;
+
+      const updatedUser =
+        createdProduct?.updatedBy?.name ||
+        createdProduct?.createdBy?.name ||
+        createdProduct?.updatedBy ||
+        createdProduct?.createdBy ||
+        responseData?.updatedBy?.name ||
+        responseData?.createdBy?.name ||
+        responseData?.updatedBy ||
+        responseData?.createdBy;
+
+      setLastUpdatedDate(
+        updatedDate
+          ? new Date(updatedDate).toLocaleString()
+          : '-'
       );
 
-      setForm(initialFormState);
+      setLastUpdatedUser(
+        updatedUser
+          ? typeof updatedUser === 'object'
+            ? updatedUser.name || updatedUser.username || '-'
+            : String(updatedUser)
+          : '-'
+      );
+
+      if (!generatedId) {
+        console.log('Product API Response:', response);
+      } else {
+        setForm((prev) => ({
+          ...prev,
+          productId: String(generatedId),
+        }));
+      }
 
       if (fileInputRef.current) {
         fileInputRef.current.value = '';
       }
 
-      setTimeout(() => {
-        closeModal();
-      }, 1000);
+      onClose?.();
     } catch (error) {
-      showToast(error.message || 'Unable to save product', 'error');
+      showToast(
+        error.response?.data?.message ||
+        error.message ||
+        'Unable to save product',
+        'error'
+      );
     } finally {
       setIsSaving(false);
     }
   };
+
 
 
   const handleReset = () => {
@@ -563,7 +646,6 @@ export default function AddProductsModal({ onClose }) {
           </button>
         </div>
 
-
         <div className="p-4 sm:p-5 space-y-4 flex-1 min-h-0 overflow-y-auto">
           <section className="rounded-xl border border-gray-300 overflow-hidden bg-white">
             <div className="bg-[#2B223C] px-4 py-2.5">
@@ -581,7 +663,8 @@ export default function AddProductsModal({ onClose }) {
                   <input
                     readOnly
                     value={form.productId}
-                    className="min-w-0 w-16 shrink-0 h-9 px-2 text-[13px] text-gray-400 bg-gray-100 border border-gray-300 rounded-md"
+                    placeholder="Auto"
+                    className="min-w-0 w-28 flex-1 h-9 px-2 text-[13px] text-gray-700 bg-gray-100 border border-gray-300 rounded-md"
                   />
                 </div>
 
@@ -697,6 +780,7 @@ export default function AddProductsModal({ onClose }) {
                   </label>
                   <input
                     type="number"
+                    min="0"
                     value={form.displayOrder}
                     onChange={(e) => updateField('displayOrder', e.target.value)}
                     className="w-[65px] h-9 px-2 border border-gray-300 rounded-md text-[13px]"
@@ -872,7 +956,10 @@ export default function AddProductsModal({ onClose }) {
                         <input
                           value={form.pointValue}
                           onChange={(e) =>
-                            updateField('pointValue', e.target.value.replace(/[^0-9.]/g, ''))
+                            updateField(
+                              'pointValue',
+                              e.target.value.replace(/[^0-9.]/g, '')
+                            )
                           }
                           className="w-full h-9 pl-5 pr-2 border border-gray-300 rounded-md text-[13px]"
                         />
@@ -1025,18 +1112,17 @@ export default function AddProductsModal({ onClose }) {
               <span className="font-medium text-gray-800 mr-2">
                 Last Updated Date
               </span>
-              <span className="text-gray-400">-</span>
+              <span className="text-gray-400">{lastUpdatedDate}</span>
             </div>
 
             <div>
               <span className="font-medium text-gray-800 mr-2">
                 Last Updated User
               </span>
-              <span className="text-gray-400">-</span>
+              <span className="text-gray-400">{lastUpdatedUser}</span>
             </div>
           </div>
         </div>
-
 
         <div className="shrink-0 bg-white border-t border-gray-200 px-5 py-3 flex flex-wrap items-center justify-end gap-2.5">
           <button
@@ -1112,9 +1198,7 @@ export default function AddProductsModal({ onClose }) {
                   type="text"
                   autoFocus
                   value={quickAddValue}
-                  onChange={(e) =>
-                    setQuickAddValue(e.target.value)
-                  }
+                  onChange={(e) => setQuickAddValue(e.target.value)}
                   placeholder={`Enter ${quickAddModal.toLowerCase()} name...`}
                   className="w-full h-9 px-3 text-sm border border-gray-300 rounded-md focus:outline-none focus:border-[#2563EB]"
                 />
