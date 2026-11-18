@@ -31,7 +31,6 @@
 - **Product Creation** — Add new products with relevant product information.
 - **Product Listing** — View product records in an organized table interface.
 - **Product Details** — Retrieve individual product information using a unique product ID.
-- **Product Updates** — Modify existing product information.
 - **Product Management Interface** — Manage product information through an intuitive dashboard.
 
 ### Application Features
